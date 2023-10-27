@@ -38,12 +38,44 @@ app.post('/new-client', async (req, res) => {
         phone_number: phone_number, 
         products: productsFound.map((cat) => cat._id)
     })
+    // Encrypt password
+    client.password = await ClientModel.encryptPassword(password)
 
+    // Save in data base
     const newClient = client.save()
 
-    res.status(200).json(newClient)
+    res.status(200).json({
+        _id: newClient._id,
+        username: (await newClient).username,
+        email: newClient.email
+    })
 })
 
+
+app.get('/login', async (req, res) => {
+    try {
+        const { email, password } = req.body
+        
+        // Bring products = populate("ProductModel")
+        const userFound = await ClientModel.findOne({ email: email })
+        if(!userFound) {
+            res.status(400).json("Email not found")
+            return
+        }
+
+        const matchedPassword = await ClientModel.comparePassword(password, userFound.password)
+
+        if(!matchedPassword) {
+            res.status(400).json("Password is invalid")
+            return
+        }
+
+        // Here it is created JWT
+        res.status(200).json(userFound)
+    } catch {
+        res.status(400).json({error: error.message})
+    }
+})
 
 module.exports = {
     app,
