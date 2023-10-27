@@ -24,12 +24,26 @@ app.post('/product', (req, res) => {
     res.json("Product created successfull")
 })
 
-app.post('/new-client', (req, res) => {
-    const name = req.query.name
-    const newClient = ClientModel.create({ name: name })
+app.post('/new-client', async (req, res) => {
+    const { username, email, identification_number, password, phone_number, products } = req.body
 
-    res.json("User created successfull")
+    // $in ==> Que contenga
+    const productsFound = await ProductModel.find({ name: {$in: products} })
+
+    const client = new ClientModel({
+        username: username,
+        email: email, 
+        identification_number: identification_number,
+        password: password, 
+        phone_number: phone_number, 
+        products: productsFound.map((cat) => cat._id)
+    })
+
+    const newClient = client.save()
+
+    res.status(200).json(newClient)
 })
+
 
 module.exports = {
     app,
